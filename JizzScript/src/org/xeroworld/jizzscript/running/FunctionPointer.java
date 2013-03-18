@@ -1,13 +1,13 @@
 package org.xeroworld.jizzscript.running;
 
 public class FunctionPointer {
-	private ScriptFunction value;
+	private Function value;
 	
-	public FunctionPointer(ScriptFunction value) {
+	public FunctionPointer(Function value) {
 		this.value = value;
 	}
 	
-	public ScriptFunction getValue() {
+	public Function getValue() {
 		return value;
 	}
 }

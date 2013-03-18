@@ -74,20 +74,20 @@ public class Runner extends Instance {
 		return null;
 	}
 	
-	public Variable run() {
+	public Variable run() throws ScriptException {
 		return run(false);
 	}
 	
-	public Variable run(boolean makeList) {
+	public Variable run(boolean makeList) throws ScriptException {
 		int at = 0;
 		try {
 			while (hasNext()) {
 				Variable ret = runNext(true);
 				if (ret == null) {
-					// THROW
+					throw new ScriptException("Please, kill me!");
 				}
 				if (makeList) {
-					getVariable(String.valueOf(at)).setValue(ret);
+					getVariable(String.valueOf(at)).setValue(ret.getValue());
 					at++;
 				}
 			}
@@ -98,33 +98,46 @@ public class Runner extends Instance {
 		return new Variable(this);
 	}
 
-	public Variable runNext() throws ReturnException {
+	public Variable runNext() throws ReturnException, ScriptException {
 		return runNext(false);
 	}
 	
-	public Variable runNext(boolean first) throws ReturnException {
-		Variable var = next(first);
-		if (var.getValue() instanceof ScriptFunction) {
-			return ((ScriptFunction)var.getValue()).run(this);
+	public Variable runNext(boolean first) throws ReturnException, ScriptException {
+		return run(next(first));
+	}
+	
+	public Variable run(Variable var) throws ReturnException, ScriptException {
+		if (var.getValue() instanceof Function) {
+			return ((Function)var.getValue()).run(this);
 		}
 		else if (var.getValue() instanceof CodeInstruction) {
 			Runner r = new Runner(funclib, this, ((CodeInstruction)var.getValue()).getInstructions());
-			r.setMaster(this);
+			r.setMaster(getMaster());
 			r.run();
 			var = new Variable(r);
 		}
 		return var;
 	}
 	
-	public Variable next() throws ReturnException {
+	public Variable next() throws ReturnException, ScriptException {
 		return next(false);
 	}
 	
-	public Variable next(boolean first) throws ReturnException {
+	public Variable next(boolean first) throws ReturnException, ScriptException {
 		Instruction ins = getNextInstruction();
 		position++;
 		if (ins == null) {
-			// Throw error.
+			String message;
+			if (first) {
+				message = "Something is wrong with the compilation!";
+			}
+			else {
+				message = "Argument for function not found.";
+			}
+			throw new ScriptException(message);
+		}
+		if (ins.getCodeblock() != null) {
+			//System.out.println(ins.getCodeblock().toString());
 		}
 		if (ins instanceof StringInstruction) {
 			return new Variable(((StringInstruction)ins).getValue());
@@ -146,7 +159,9 @@ public class Runner extends Instance {
 		if (ins instanceof NameInstruction) {
 			return getVariable(((NameInstruction)ins).getName());
 		}
-		// Throw error
-		return null;
+		if (ins.getCodeblock() != null) {
+			throw new ScriptException("Something went wrong around " + ins.toString());
+		}
+		throw new ScriptException("Please, kill me!");
 	}
 }

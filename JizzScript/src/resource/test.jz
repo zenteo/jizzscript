@@ -1,0 +1,55 @@
+// math package
+pack math {
+	// A constant is also a variable
+	PI = 3.14159264358979323846
+
+	func Vector {
+		// x = $, where the next parameter is $
+		// y = $, where the next parameter is $
+		$x
+		$y
+		create = @Vector
+		
+		// Vector has a function add(vector)
+		func add {
+			$v
+			x += v.x
+			y += v.y
+			return super
+		}
+		
+		// Vector has a function added(vector)
+		func added {
+			$v
+			return Vector x + v.x y + v.y
+		}
+		
+		// Vector has a function equals(vector)
+		func equals {
+			$v
+			return x == v.x && y == v.y
+		}
+		
+		// Vector has a toString method
+		func toString {
+			return "[" + x + ", " + y + "]"
+		}
+	}
+
+}
+
+// test package
+pack test {
+	a = math.Vector 3 5
+	b = a.create 2 1
+}
+
+pack test {
+	jizzscript.println (a.added b).toString
+	jizzscript.println (a.added b).toString
+	
+	jizzscript.println "-----"
+	
+	jizzscript.println (a.add b).toString
+	jizzscript.println (a.add b).toString
+}

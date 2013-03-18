@@ -1,12 +1,15 @@
 package org.xeroworld.jizzscript;
 
-import java.util.ArrayList;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 import org.xeroworld.jizzscript.parsing.Codeblock;
-import org.xeroworld.jizzscript.parsing.Parser;
 import org.xeroworld.jizzscript.running.DefaultLibrary;
 import org.xeroworld.jizzscript.running.FunctionLibrary;
 import org.xeroworld.jizzscript.running.Runner;
+import org.xeroworld.jizzscript.running.ScriptException;
 import org.xeroworld.jizzscript.running.Variable;
 
 public class JizzScript {
@@ -32,21 +35,39 @@ public class JizzScript {
 	
 	public Object run() {
 		Runner r = new Runner(functionLibrary, compiler.getInstructions());
-		Variable var = r.run();
-		if (var != null) {
-			return var.getValue();
+		functionLibrary.addDefaults(r);
+		try {
+			Variable var = r.run();
+			if (var != null) {
+				return var.getValue();
+			}
+		}
+		catch (ScriptException ex) {
+			System.out.println(ex.getMessage());
 		}
 		return null;
 	}
 	
 	public static void main(String[] args) {
-		String code =	"vector = func { $x $y func echo { $scale print x*scale print y*scale} } \n" +
-						"v = {$x $y} 4 3 \n" +
-						"func v.echo {print v.x}" +
-						"print \"lol\" + 2 + \"fa\"";
-		
 		JizzScript js = new JizzScript();
-		js.addCode(code);
+		
+		StringBuilder builder = new StringBuilder();
+		try (InputStream is = js.getClass().getResourceAsStream("/resource/test.jz")) {
+			try (InputStreamReader isr = new InputStreamReader(is)) {
+				try (BufferedReader br = new BufferedReader(isr)) {
+					String line;
+					while ((line = br.readLine()) != null) {
+						builder.append(line);
+						builder.append('\n');
+					}
+				}
+			}
+		} catch (IOException e2) {
+			e2.printStackTrace();
+		}
+		
+		js.addCode(builder.toString());
+		
 		js.run();
 	}
 }

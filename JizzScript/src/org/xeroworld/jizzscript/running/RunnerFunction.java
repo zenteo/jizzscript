@@ -1,5 +1,16 @@
 package org.xeroworld.jizzscript.running;
 
-interface RunnerFunction {
-	public Variable run(Runner runner, boolean isFirst) throws ReturnException;
+public abstract class RunnerFunction {
+	private String name;
+	
+	public RunnerFunction(String name) {
+		this.name = name;
+	}
+	
+	public abstract Variable run(Runner runner, boolean isFirst)
+			throws ReturnException, ScriptException;
+
+	public String getName() {
+		return name;
+	}
 }

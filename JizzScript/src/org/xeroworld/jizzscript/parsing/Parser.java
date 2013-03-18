@@ -24,7 +24,7 @@ class Sequence implements Cloneable {
 	public Sequence(String from, String to, int maxCount, Character escape, boolean visible) {
 		this.from = from;
 		this.to = to;
-		this.setEscape(escape);
+		this.escape = escape;
 		this.maxCount = maxCount;
 		this.visible = visible;
 	}
@@ -114,7 +114,7 @@ public class Parser {
 		containers.add(new Sequence("//", "\n", 1, false)); 		// Regular line comment
 		containers.add(new Sequence("/*", "*/", false)); 			// Block comment
 
-		containers.add(new Sequence("\"", "\"", '\\', true));	// Text container "..." with \ as escape character.
+		containers.add(new Sequence("\"", "\"", 1, '\\', true));	// Text container "..." with \ as escape character.
 		containers.add(new Sequence("{", "}", true));			// Code block
 		containers.add(new Sequence("(", ")", true));			// Expression
 		containers.add(new Sequence("[", "]", true));			// Regular list
@@ -141,6 +141,10 @@ public class Parser {
 		splitters.add(new Splitter(">", true));		// > operator
 		splitters.add(new Splitter("<", true));		// < operator
 		splitters.add(new Splitter("!", true));		// ! operator
+		
+		//Increase/Decrease
+		splitters.add(new Splitter("++", true));	// increase
+		splitters.add(new Splitter("--", true));	// decrease
 		
 		// Set-to arithmetic operators
 		splitters.add(new Splitter("+=", true));	// += operator
@@ -177,16 +181,29 @@ public class Parser {
 		int lineNumber = codeblock.getLine();
 		int column = codeblock.getColumn();
 		int lastLineShift = -codeblock.getColumn();
+		boolean isInside;
 		for (int i = 0; i < code.length(); i++) {
 			if (code.charAt(i) == '\n') {
 				lineNumber++;
 				lastLineShift = i;
 			}
 			stepToNext = false;
+			isInside = false;
 			for (int k = 0; k < containers.size(); k++) {
 				Sequence c = containers.get(k);
 				if (c.isInside(insideCounts[k])) {
-					if (code.startsWith(c.getTo(), i)) {
+					isInside = true;
+				}
+			}
+			for (int k = 0; k < containers.size(); k++) {
+				Sequence c = containers.get(k);
+				if (c.isInside(insideCounts[k])) {
+					if (c.getEscape() != null && code.charAt(i) == c.getEscape()) {
+						System.out.println("asdfadf");
+						i += 1;
+						current.append(code.charAt(i));
+					}
+					else if (code.startsWith(c.getTo(), i)) {
 						if (c.decInsideCount(insideCounts[k]))
 							insideCounts[k]--;
 						if (current.length() > 0)
@@ -215,7 +232,7 @@ public class Parser {
 					stepToNext = true;
 					break;
 				}
-				else {
+				else if (!isInside) {
 					if (code.startsWith(c.getFrom(), i)) {
 						if (current.length() > 0) {
 							splitted.add(new Codeblock(codeblock.getMetadata(), current.toString(), lineNumber, column));
@@ -303,6 +320,24 @@ public class Parser {
 				}
 			}
 		}
+		for (int i = ret.size() - 2; i >= 0 ; i--) {
+			ArrayList<Codeblock> curr = ret.get(i);
+			if (curr.size() == 1) {
+				if (curr.get(0).getCode().equals("@")) {
+					ret.get(i + 1).add(0, curr.get(0));
+					ret.remove(i);
+				}
+			}
+		}
+		for (int i = ret.size() - 1; i >= 1 ; i--) {
+			ArrayList<Codeblock> curr = ret.get(i);
+			if (curr.size() == 1) {
+				if (curr.get(0).getCode().equals("++") || curr.get(0).getCode().equals("--")) {
+					ret.get(i - 1).add(0, curr.get(0));
+					ret.remove(i);
+				}
+			}
+		}
 		for (int i = ret.size() - 2; i >= 1 ; i--) {
 			ArrayList<Codeblock> curr = ret.get(i);
 			if (curr.size() == 1) {
@@ -363,7 +398,7 @@ public class Parser {
 		for (int i = ret.size() - 2; i >= 1 ; i--) {
 			ArrayList<Codeblock> curr = ret.get(i);
 			if (curr.size() == 1) {
-				if (curr.get(0).getCode().equals("&&") || curr.get(0).getCode().equals("||")) {
+				if (curr.get(0).getCode().equals("==") || curr.get(0).getCode().equals("!=") || curr.get(0).getCode().equals(">=") || curr.get(0).getCode().equals("<=") || curr.get(0).getCode().equals(">") || curr.get(0).getCode().equals("<")) {
 					ret.get(i - 1).add(0, curr.get(0));
 					ret.get(i - 1).addAll(ret.get(i + 1));
 					ret.remove(i + 1);
@@ -374,7 +409,7 @@ public class Parser {
 		for (int i = ret.size() - 2; i >= 1 ; i--) {
 			ArrayList<Codeblock> curr = ret.get(i);
 			if (curr.size() == 1) {
-				if (curr.get(0).getCode().equals("==") || curr.get(0).getCode().equals("!=") || curr.get(0).getCode().equals(">=") || curr.get(0).getCode().equals("<=") || curr.get(0).getCode().equals(">") || curr.get(0).getCode().equals("<")) {
+				if (curr.get(0).getCode().equals("&&") || curr.get(0).getCode().equals("||")) {
 					ret.get(i - 1).add(0, curr.get(0));
 					ret.get(i - 1).addAll(ret.get(i + 1));
 					ret.remove(i + 1);

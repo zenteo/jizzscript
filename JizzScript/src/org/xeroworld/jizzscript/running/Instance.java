@@ -10,6 +10,10 @@ public class Instance {
 		this.parent = parent;
 	}
 	
+	public Instance getParent() {
+		return parent;
+	}
+	
 	public Variable getVariable(String name) {
 		if (variables.containsKey(name)) {
 			return variables.get(name);
@@ -30,7 +34,7 @@ public class Instance {
 			return variables.get(name);
 		}
 		if (parent != null) {
-			return parent.getVariable(name);
+			return parent.getVariableSafely(name);
 		}
 		return null;
 	}
