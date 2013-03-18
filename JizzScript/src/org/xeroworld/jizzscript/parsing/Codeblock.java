@@ -1,9 +1,10 @@
 package org.xeroworld.jizzscript.parsing;
 
 
-public class Codeblock {
+public class Codeblock implements Cloneable {
 	private Metadata metadata;
 	private String code;
+	private boolean generated;
 	private int line, column;
 	
 	public Codeblock(Metadata metadata, String code, int line, int column) {
@@ -11,6 +12,7 @@ public class Codeblock {
 		this.code = code;
 		this.line = line;
 		this.column = column;
+		this.generated = false;
 	}
 	
 	public Codeblock(String code, int line, int column) {
@@ -22,6 +24,17 @@ public class Codeblock {
 		this(new Metadata(), code, 1, 1);
 		this.metadata.setRuntimeCode(true);
 	}
+	
+	@Override
+	public Object clone() {
+		try {
+			return super.clone();
+		} catch (CloneNotSupportedException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
 
 	public Metadata getMetadata() {
 		return metadata;
@@ -37,6 +50,14 @@ public class Codeblock {
 
 	public void setCode(String code) {
 		this.code = code;
+	}
+	
+	public boolean isGenerated() {
+		return generated;
+	}
+	
+	public void setGenerated(boolean generated) {
+		this.generated = generated;
 	}
 
 	public int getLine() {

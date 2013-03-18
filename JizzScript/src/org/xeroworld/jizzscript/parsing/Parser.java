@@ -2,11 +2,11 @@ package org.xeroworld.jizzscript.parsing;
 
 import java.util.ArrayList;
 
-class Sequence {
+class Sequence implements Cloneable {
 	private String from;
 	private String to;
 	private Character escape;
-	private int insideCount, maxCount;
+	private int maxCount;
 	private boolean visible;
 	
 	public Sequence(String from, String to, boolean visible) {
@@ -26,8 +26,7 @@ class Sequence {
 		this.to = to;
 		this.setEscape(escape);
 		this.maxCount = maxCount;
-		this.setVisible(visible);
-		this.insideCount = 0;
+		this.visible = visible;
 	}
 	
 	public String getFrom() {
@@ -46,20 +45,20 @@ class Sequence {
 		this.to = to;
 	}
 	
-	public void incInsideCount() {
-		insideCount++;
+	public boolean incInsideCount(Integer insideCount) {
 		if (maxCount >= 0) {
-			if (insideCount > maxCount) {
-				insideCount = maxCount;
+			if (insideCount + 1 > maxCount) {
+				return false;
 			}
 		}
+		return true;
 	}
 	
-	public void decInsideCount() {
-		insideCount--;
+	public boolean decInsideCount(Integer insideCount) {
+		return true;
 	}
 	
-	public boolean isInside() {
+	public boolean isInside(Integer insideCount) {
 		return insideCount > 0;
 	}
 
@@ -117,6 +116,7 @@ public class Parser {
 
 		containers.add(new Sequence("\"", "\"", '\\', true));	// Text container "..." with \ as escape character.
 		containers.add(new Sequence("{", "}", true));			// Code block
+		containers.add(new Sequence("(", ")", true));			// Expression
 		containers.add(new Sequence("[", "]", true));			// Regular list
 		
 		//[Invisible Splitters]
@@ -125,6 +125,7 @@ public class Parser {
 		splitters.add(new Splitter("\n", false));	// New line
 		
 		//[Splitters]
+		splitters.add(new Splitter(".", true));		// Decimal point / child of
 		splitters.add(new Splitter("$", true));		// parameter fetcher
 		splitters.add(new Splitter("@", true));		// address of operator
 		
@@ -167,7 +168,8 @@ public class Parser {
 		splitters.add(new Splitter("~", true));		// Bitwise not operator
 	}
 	
-	public ArrayList<Codeblock> split(Codeblock codeblock) {
+	private ArrayList<Codeblock> split(Codeblock codeblock) {
+		int[] insideCounts = new int[containers.size()];
 		ArrayList<Codeblock> splitted = new ArrayList<Codeblock>();
 		StringBuilder current = new StringBuilder();
 		boolean stepToNext;
@@ -181,16 +183,19 @@ public class Parser {
 				lastLineShift = i;
 			}
 			stepToNext = false;
-			for (Sequence c : containers) {
-				if (c.isInside()) {
+			for (int k = 0; k < containers.size(); k++) {
+				Sequence c = containers.get(k);
+				if (c.isInside(insideCounts[k])) {
 					if (code.startsWith(c.getTo(), i)) {
-						c.decInsideCount();
+						if (c.decInsideCount(insideCounts[k]))
+							insideCounts[k]--;
 						if (current.length() > 0)
 							current.append(c.getTo());
 						i += c.getTo().length() - 1;
 					}
 					else if (code.startsWith(c.getFrom(), i)) {
-						c.incInsideCount();
+						if (c.incInsideCount(insideCounts[k]))
+							insideCounts[k]++;
 						if (current.length() > 0)
 							current.append(c.getFrom());
 						i += c.getFrom().length() - 1;
@@ -198,7 +203,7 @@ public class Parser {
 					else {
 						current.append(code.charAt(i));
 					}
-					if (!c.isInside()) {
+					if (!c.isInside(insideCounts[k])) {
 						if (c.isVisible()) {
 							if (current.length() > 0) {
 								splitted.add(new Codeblock(codeblock.getMetadata(), current.toString(), lineNumber, column));
@@ -215,7 +220,8 @@ public class Parser {
 						if (current.length() > 0) {
 							splitted.add(new Codeblock(codeblock.getMetadata(), current.toString(), lineNumber, column));
 						}
-						c.incInsideCount();
+						if (c.incInsideCount(insideCounts[k]))
+							insideCounts[k]++;
 						current = new StringBuilder();
 						column = i - lastLineShift;
 						i += c.getFrom().length() - 1;
@@ -229,12 +235,20 @@ public class Parser {
 				continue;
 			for (Splitter s : splitters) {
 				if (code.startsWith(s.getValue(), i)) {
+					if (s.getValue().equals(".") && current.length() > 0) {
+						try {
+							Integer.parseInt(current.toString());
+							break;
+						}
+						catch (NumberFormatException ex) {
+						}
+					}
 					if (current.length() > 0) {
 						splitted.add(new Codeblock(codeblock.getMetadata(), current.toString(), lineNumber, column));
 					}
 					column = i - lastLineShift;
 					if (s.isVisible()) {
-						current.append(new Codeblock(codeblock.getMetadata(), s.getValue(), lineNumber, column));
+						splitted.add(new Codeblock(codeblock.getMetadata(), s.getValue(), lineNumber, column));
 					}
 					i += s.getValue().length() - 1;
 					current = new StringBuilder();
@@ -251,5 +265,135 @@ public class Parser {
 			splitted.add(new Codeblock(codeblock.getMetadata(), current.toString(), lineNumber, column));
 		}
 		return splitted;
+	}
+	
+	private ArrayList<Codeblock> arrange(ArrayList<Codeblock> codeBlocks) {
+		ArrayList<ArrayList<Codeblock>> ret = new ArrayList<ArrayList<Codeblock>>();
+		if (codeBlocks.size() > 0 && codeBlocks.get(0).getCode().equals("-")) {
+			ArrayList<Codeblock> newArr = new ArrayList<Codeblock>();
+			Codeblock c = (Codeblock)codeBlocks.get(0).clone();
+			c.setGenerated(true);
+			c.setCode("0");
+			newArr.add(c);
+			ret.add(newArr);
+		}
+		for (int i = 0; i < codeBlocks.size(); i++) {
+			Codeblock c = codeBlocks.get(i);
+			if (c.getCode().startsWith("(") && c.getCode().endsWith(")")) {
+				c = (Codeblock)c.clone();
+				c.setColumn(c.getColumn() + 1);
+				c.setCode(c.getCode().substring(1, c.getCode().length() - 1));
+				ret.add(arrange(split(c)));
+			}
+			else {
+				ArrayList<Codeblock> newArr = new ArrayList<Codeblock>();
+				newArr.add(c);
+				ret.add(newArr);
+			}
+		}
+		for (int i = 1; i < ret.size() - 1; i++) {
+			ArrayList<Codeblock> curr = ret.get(i);
+			if (curr.size() == 1) {
+				if (curr.get(0).getCode().equals(".")) {
+					ret.get(i - 1).add(0, curr.get(0));
+					ret.get(i - 1).addAll(ret.get(i + 1));
+					ret.remove(i + 1);
+					ret.remove(i);
+					i--;
+				}
+			}
+		}
+		for (int i = ret.size() - 2; i >= 1 ; i--) {
+			ArrayList<Codeblock> curr = ret.get(i);
+			if (curr.size() == 1) {
+				if (curr.get(0).getCode().equals("*") || curr.get(0).getCode().equals("/")) {
+					ret.get(i - 1).add(0, curr.get(0));
+					ret.get(i - 1).addAll(ret.get(i + 1));
+					ret.remove(i + 1);
+					ret.remove(i);
+				}
+			}
+		}
+		for (int i = ret.size() - 2; i >= 1 ; i--) {
+			ArrayList<Codeblock> curr = ret.get(i);
+			if (curr.size() == 1) {
+				if (curr.get(0).getCode().equals("+") || curr.get(0).getCode().equals("-")) {
+					ret.get(i - 1).add(0, curr.get(0));
+					ret.get(i - 1).addAll(ret.get(i + 1));
+					ret.remove(i + 1);
+					ret.remove(i);
+				}
+			}
+		}
+//		for (int i = ret.size() - 2; i >= 1 ; i--) {
+//		ArrayList<Codeblock> curr = ret.get(i);
+//		if (curr.size() == 1) {
+//			if (curr.get(0).getCode().equals("|") || curr.get(0).getCode().equals("&") || curr.get(0).getCode().equals("^")) {
+//				ret.get(i - 1).add(0, curr.get(0));
+//				ret.get(i - 1).addAll(ret.get(i + 1));
+//				ret.remove(i + 1);
+//				ret.remove(i);
+//			}
+//		}
+//	}
+//	for (int i = ret.size() - 2; i >= 1 ; i--) {
+//		ArrayList<Codeblock> curr = ret.get(i);
+//		if (curr.size() == 1) {
+//			if (curr.get(0).getCode().equals("%")) {
+//				ret.get(i - 1).add(0, curr.get(0));
+//				ret.get(i - 1).addAll(ret.get(i + 1));
+//				ret.remove(i + 1);
+//				ret.remove(i);
+//			}
+//		}
+//	}
+		for (int i = ret.size() - 2; i >= 1 ; i--) {
+			ArrayList<Codeblock> curr = ret.get(i);
+			if (curr.size() == 1) {
+				if (curr.get(0).getCode().equals("=") || curr.get(0).getCode().equals("+=") || curr.get(0).getCode().equals("-=")
+						|| curr.get(0).getCode().equals("*=") || curr.get(0).getCode().equals("/=") || curr.get(0).getCode().equals("&=")
+						|| curr.get(0).getCode().equals("|=") || curr.get(0).getCode().equals("^=") || curr.get(0).getCode().equals("%=")) {
+					ret.get(i - 1).add(0, curr.get(0));
+					ret.get(i - 1).addAll(ret.get(i + 1));
+					ret.remove(i + 1);
+					ret.remove(i);
+				}
+			}
+		}
+		for (int i = ret.size() - 2; i >= 1 ; i--) {
+			ArrayList<Codeblock> curr = ret.get(i);
+			if (curr.size() == 1) {
+				if (curr.get(0).getCode().equals("&&") || curr.get(0).getCode().equals("||")) {
+					ret.get(i - 1).add(0, curr.get(0));
+					ret.get(i - 1).addAll(ret.get(i + 1));
+					ret.remove(i + 1);
+					ret.remove(i);
+				}
+			}
+		}
+		for (int i = ret.size() - 2; i >= 1 ; i--) {
+			ArrayList<Codeblock> curr = ret.get(i);
+			if (curr.size() == 1) {
+				if (curr.get(0).getCode().equals("==") || curr.get(0).getCode().equals("!=") || curr.get(0).getCode().equals(">=") || curr.get(0).getCode().equals("<=") || curr.get(0).getCode().equals(">") || curr.get(0).getCode().equals("<")) {
+					ret.get(i - 1).add(0, curr.get(0));
+					ret.get(i - 1).addAll(ret.get(i + 1));
+					ret.remove(i + 1);
+					ret.remove(i);
+				}
+			}
+		}
+		ArrayList<Codeblock> result = new ArrayList<Codeblock>();
+		for (ArrayList<Codeblock> arr : ret) {
+			result.addAll(arr);
+		}
+		return result;
+	}
+	
+	public ArrayList<Codeblock> parse(Codeblock code) {
+		return arrange(split(code));
+	}
+	
+	public ArrayList<Codeblock> parse(String code) {
+		return arrange(split(new Codeblock(code)));
 	}
 }
