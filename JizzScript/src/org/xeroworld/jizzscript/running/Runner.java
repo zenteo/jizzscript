@@ -78,6 +78,25 @@ public class Runner extends Instance {
 		return run(false);
 	}
 	
+	public Variable runAndThrow() throws ScriptException, ReturnException {
+		return runAndThrow(false);
+	}
+	
+	public Variable runAndThrow(boolean makeList) throws ScriptException, ReturnException {
+		int at = 0;
+		while (hasNext()) {
+			Variable ret = runNext(true);
+			if (ret == null) {
+				throw new ScriptException("Please, kill me!");
+			}
+			if (makeList) {
+				getVariable(String.valueOf(at)).setValue(ret.getValue());
+				at++;
+			}
+		}
+		return new Variable(this);
+	}
+	
 	public Variable run(boolean makeList) throws ScriptException {
 		int at = 0;
 		try {
@@ -103,17 +122,17 @@ public class Runner extends Instance {
 	}
 	
 	public Variable runNext(boolean first) throws ReturnException, ScriptException {
-		return run(next(first));
+		return runVariable(next(first));
 	}
 	
-	public Variable run(Variable var) throws ReturnException, ScriptException {
+	public Variable runVariable(Variable var) throws ReturnException, ScriptException {
 		if (var.getValue() instanceof Function) {
 			return ((Function)var.getValue()).run(this);
 		}
 		else if (var.getValue() instanceof CodeInstruction) {
 			Runner r = new Runner(funclib, this, ((CodeInstruction)var.getValue()).getInstructions());
 			r.setMaster(getMaster());
-			r.run();
+			r.runAndThrow();
 			var = new Variable(r);
 		}
 		return var;

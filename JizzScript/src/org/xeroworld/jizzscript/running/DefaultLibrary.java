@@ -20,12 +20,17 @@ public class DefaultLibrary implements FunctionLibrary {
 	}
 	
 	public void addDefaults(Runner runner) {
-		Variable sysVar = runner.getVariable("jizzscript");
-		if (sysVar.getValue() == null || !(runner.getVariable("jizzscript").getValue() instanceof Instance)) {
-			sysVar.setValue(new Instance(null));
+		Variable jizzVar = runner.getVariable("jizz");
+		if (jizzVar.getValue() == null || !(jizzVar.getValue() instanceof Instance)) {
+			jizzVar.setValue(new Instance(null));
 		}
-		Instance system = (Instance)sysVar.getValue();
-		system.getVariable("print").setValue(new Function(null) {
+		Variable mathVar = runner.getVariable("math");
+		if (mathVar.getValue() == null || !(mathVar.getValue() instanceof Instance)) {
+			mathVar.setValue(new Instance(null));
+		}
+		Instance jizz = (Instance)jizzVar.getValue();
+		Instance math = (Instance)mathVar.getValue();
+		jizz.getVariable("print").setValue(new Function(null) {
 			@Override
 			public Variable run(Runner master) throws ScriptException {
 				try {
@@ -38,13 +43,110 @@ public class DefaultLibrary implements FunctionLibrary {
 				return new Variable();
 			}
 		});
-		system.getVariable("println").setValue(new Function(null) {
+		jizz.getVariable("println").setValue(new Function(null) {
 			@Override
 			public Variable run(Runner master) throws ScriptException {
 				try {
 					Variable next;
 					next = master.runNext();
 					System.out.println(next.getValue());
+				} catch (ReturnException e) {
+					e.printStackTrace();
+				}
+				return new Variable();
+			}
+		});
+		math.getVariable("pow").setValue(new Function(null) {
+			@Override
+			public Variable run(Runner master) throws ScriptException {
+				try {
+					Variable a = master.runNext();
+					Variable b = master.runNext();
+					return new Variable(Math.pow((Double)a.getValue(), (Double)b.getValue()));
+				} catch (ReturnException e) {
+					e.printStackTrace();
+				}
+				return new Variable();
+			}
+		});
+		math.getVariable("cos").setValue(new Function(null) {
+			@Override
+			public Variable run(Runner master) throws ScriptException {
+				try {
+					Variable a = master.runNext();
+					return new Variable(Math.cos((Double)a.getValue()));
+				} catch (ReturnException e) {
+					e.printStackTrace();
+				}
+				return new Variable();
+			}
+		});
+		math.getVariable("sin").setValue(new Function(null) {
+			@Override
+			public Variable run(Runner master) throws ScriptException {
+				try {
+					Variable a = master.runNext();
+					return new Variable(Math.sin((Double)a.getValue()));
+				} catch (ReturnException e) {
+					e.printStackTrace();
+				}
+				return new Variable();
+			}
+		});
+		math.getVariable("abs").setValue(new Function(null) {
+			@Override
+			public Variable run(Runner master) throws ScriptException {
+				try {
+					Variable a = master.runNext();
+					return new Variable(Math.abs((Double)a.getValue()));
+				} catch (ReturnException e) {
+					e.printStackTrace();
+				}
+				return new Variable();
+			}
+		});
+		math.getVariable("sqrt").setValue(new Function(null) {
+			@Override
+			public Variable run(Runner master) throws ScriptException {
+				try {
+					Variable a = master.runNext();
+					return new Variable(Math.sqrt((Double)a.getValue()));
+				} catch (ReturnException e) {
+					e.printStackTrace();
+				}
+				return new Variable();
+			}
+		});
+		math.getVariable("exp").setValue(new Function(null) {
+			@Override
+			public Variable run(Runner master) throws ScriptException {
+				try {
+					Variable a = master.runNext();
+					return new Variable(Math.exp((Double)a.getValue()));
+				} catch (ReturnException e) {
+					e.printStackTrace();
+				}
+				return new Variable();
+			}
+		});
+		math.getVariable("floor").setValue(new Function(null) {
+			@Override
+			public Variable run(Runner master) throws ScriptException {
+				try {
+					Variable a = master.runNext();
+					return new Variable(Math.floor((Double)a.getValue()));
+				} catch (ReturnException e) {
+					e.printStackTrace();
+				}
+				return new Variable();
+			}
+		});
+		math.getVariable("ceil").setValue(new Function(null) {
+			@Override
+			public Variable run(Runner master) throws ScriptException {
+				try {
+					Variable a = master.runNext();
+					return new Variable(Math.ceil((Double)a.getValue()));
 				} catch (ReturnException e) {
 					e.printStackTrace();
 				}
@@ -84,11 +186,26 @@ public class DefaultLibrary implements FunctionLibrary {
 				Variable b = runner.next();
 				if (a.getValue() != null && a.getValue() instanceof Boolean) {
 					if ((Boolean)a.getValue()) {
-						runner.run(b);
+						runner.runVariable(b);
 					}
 					return new Variable(a.getValue());
 				}
 				return new Variable(false);
+			}
+		});
+		addFunction(new RunnerFunction("while") {
+			public Variable run(Runner runner, boolean isFirst) throws ReturnException, ScriptException {
+				int start = runner.getPosition();
+				Variable a = runner.runNext();
+				Variable b = runner.next();
+				int end = runner.getPosition();
+				runner.setPosition(start);
+				while ((Boolean)runner.runNext().getValue()) {
+					runner.runVariable(b);
+					runner.setPosition(start);
+				}
+				runner.setPosition(end);
+				return new Variable();
 			}
 		});
 		addFunction(new RunnerFunction("var") {
@@ -101,15 +218,33 @@ public class DefaultLibrary implements FunctionLibrary {
 				return new Variable();
 			}
 		});
+		addFunction(new RunnerFunction("contains") {
+			public Variable run(Runner runner, boolean isFirst) throws ReturnException, ScriptException {
+				Variable a = runner.runNext();
+				Instruction ins = runner.getNextInstruction();
+				runner.incPosition();
+				if (a.getValue() == null || !(a.getValue() instanceof Instance)) {
+					return new Variable(false);
+				}
+				if (ins != null && ins instanceof NameInstruction) {
+					return new Variable(((Instance)a.getValue()).getVariables().containsKey(((NameInstruction)ins).getName()));
+				}
+				return new Variable();
+			}
+		});
 		addFunction(new RunnerFunction("pack") {
 			public Variable run(Runner runner, boolean isFirst) throws ReturnException, ScriptException {
 				Variable a = null;
 				if (isFirst) {
 					a = runner.runNext();
 				}
-				if (a != null && a.getValue() instanceof Runner) {
-					Runner r = (Runner)a.getValue();
-					return r.run(runner.next());
+				if (a != null && a.getValue() instanceof Instance) {
+					Variable b = runner.next();
+					if (b.getValue() != null && b.getValue() instanceof CodeInstruction) {
+						Runner r = ((Instance)a.getValue()).derive(runner.getFunctionLibrary(), ((CodeInstruction)b.getValue()).getInstructions());
+						r.setMaster(runner.getMaster());
+						return r.runAndThrow();
+					}
 				}
 				Variable b = runner.runNext();
 				if (a != null) {
@@ -181,6 +316,34 @@ public class DefaultLibrary implements FunctionLibrary {
 				if (a.getValue() == null && b.getValue() == null)
 					return new Variable(false);
 				return new Variable(!a.getValue().equals(b.getValue()));
+			}
+		});
+		addFunction(new RunnerFunction(">=") {
+			public Variable run(Runner runner, boolean isFirst) throws ReturnException, ScriptException {
+				Variable a = runner.runNext();
+				Variable b = runner.runNext();
+				return new Variable((Double)a.getValue() >= (Double)b.getValue());
+			}
+		});
+		addFunction(new RunnerFunction("<=") {
+			public Variable run(Runner runner, boolean isFirst) throws ReturnException, ScriptException {
+				Variable a = runner.runNext();
+				Variable b = runner.runNext();
+				return new Variable((Double)a.getValue() <= (Double)b.getValue());
+			}
+		});
+		addFunction(new RunnerFunction(">") {
+			public Variable run(Runner runner, boolean isFirst) throws ReturnException, ScriptException {
+				Variable a = runner.runNext();
+				Variable b = runner.runNext();
+				return new Variable((Double)a.getValue() > (Double)b.getValue());
+			}
+		});
+		addFunction(new RunnerFunction("<") {
+			public Variable run(Runner runner, boolean isFirst) throws ReturnException, ScriptException {
+				Variable a = runner.runNext();
+				Variable b = runner.runNext();
+				return new Variable((Double)a.getValue() < (Double)b.getValue());
 			}
 		});
 		addFunction(new RunnerFunction("+=") {
@@ -326,7 +489,7 @@ public class DefaultLibrary implements FunctionLibrary {
 					return new Variable();
 				}
 				Instance instance = ((Instance)a.getValue());
-				return instance.getVariable(varName);
+				return instance.getField(varName);
 			}
 		});
 	}

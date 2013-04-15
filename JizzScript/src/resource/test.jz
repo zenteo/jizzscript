@@ -1,8 +1,12 @@
 // math package
+
 pack math {
 	// A constant is also a variable
 	PI = 3.14159264358979323846
 
+	/*
+	* A vector is, and will always be, a vector.
+	*/
 	func Vector {
 		// x = $, where the next parameter is $
 		// y = $, where the next parameter is $
@@ -13,6 +17,11 @@ pack math {
 		// Vector has a function add(vector)
 		func add {
 			$v
+			if (contains v create) == false {
+				x += v
+				y += $
+				return super
+			}
 			x += v.x
 			y += v.y
 			return super
@@ -45,11 +54,19 @@ pack test {
 }
 
 pack test {
-	jizzscript.println (a.added b).toString
-	jizzscript.println (a.added b).toString
+	jizz.println (a.added b).toString
+	jizz.println (a.added b).toString
 	
-	jizzscript.println "-----"
-	
-	jizzscript.println (a.add b).toString
-	jizzscript.println (a.add b).toString
+	jizz.println "-----"
+	jizz.println (a.add b).toString
+	jizz.println (a.add b).toString
 }
+
+
+jizz.println math.sqrt 3.5
+i = 0
+while i < 1000000 { // 1 000 000
+	doNuthing
+	i++
+}
+jizz.println "Done"
