@@ -10,6 +10,10 @@ pack math {
 		$y
 		create = @Vector
 		
+		func clone {
+			return Vector x y
+		}
+		
 		// Vector has a function add(vector)
 		func add {
 			$v
@@ -20,8 +24,52 @@ pack math {
 		
 		// Vector has a function added(vector)
 		func added {
+			ret = clone
+			ret.add $
+			return ret
+		}
+		
+				// Vector has a function add(vector)
+		func sub {
 			$v
-			return Vector x + v.x y + v.y
+			x -= v.x
+			y -= v.y
+			return super
+		}
+		
+		// Vector has a function added(vector)
+		func subed {
+			ret = clone
+			ret.sub $
+			return ret
+		}
+		
+		func mul {
+			$f
+			x *= f
+			y *= f
+			return super
+		}
+		
+		// Vector has a function added(vector)
+		func muled {
+			ret = clone
+			ret.mul $
+			return ret
+		}
+		
+		func div {
+			$f
+			x /= f
+			y /= f
+			return super
+		}
+		
+		// Vector has a function added(vector)
+		func dived {
+			ret = clone
+			ret.div $
+			return ret
 		}
 		
 		// Vector has a function equals(vector)
@@ -52,4 +100,5 @@ pack test {
 	
 	jizzscript.println (a.add b).toString
 	jizzscript.println (a.add b).toString
+	jizzscript.println (math.cos 23)
 }
