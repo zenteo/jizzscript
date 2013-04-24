@@ -65,8 +65,10 @@ pack test {
 
 jizz.println math.sqrt 3.5
 i = 0
-while i < 1000000 { // 1 000 000
-	doNuthing
+while i < 100 { // 1 000 000
+	if i >= 50 {
+		jizz.println "heahe" + i
+	}
 	i++
 }
 jizz.println "Done"
