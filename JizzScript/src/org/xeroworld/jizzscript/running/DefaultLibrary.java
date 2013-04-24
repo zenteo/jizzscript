@@ -2,6 +2,8 @@ package org.xeroworld.jizzscript.running;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map.Entry;
 
 import org.xeroworld.jizzscript.instructions.CodeInstruction;
 import org.xeroworld.jizzscript.instructions.FunctionInstruction;
@@ -223,6 +225,20 @@ public class DefaultLibrary implements FunctionLibrary {
 				Variable a = runner.runNext();
 				Instruction ins = runner.getNextInstruction();
 				runner.incPosition();
+				if (ins instanceof CodeInstruction) {
+					CodeInstruction ci = (CodeInstruction)ins;
+					for (Instruction ciIns : ci.getInstructions()) {
+						if (a.getValue() == null || !(a.getValue() instanceof Instance)) {
+							return new Variable(false);
+						}
+						if (ins != null && ins instanceof NameInstruction) {
+							if (!((Instance)a.getValue()).getVariables().containsKey(((NameInstruction)ciIns).getName())) {
+								return new Variable(false);	
+							}
+						}
+					}
+					return new Variable(true);
+				}
 				if (a.getValue() == null || !(a.getValue() instanceof Instance)) {
 					return new Variable(false);
 				}
@@ -230,6 +246,58 @@ public class DefaultLibrary implements FunctionLibrary {
 					return new Variable(((Instance)a.getValue()).getVariables().containsKey(((NameInstruction)ins).getName()));
 				}
 				return new Variable();
+			}
+		});
+		addFunction(new RunnerFunction("interfaceOf") {
+			public Variable run(Runner runner, boolean isFirst) throws ReturnException, ScriptException {
+				Variable a = runner.runNext();
+				Interface ret = new Interface();
+				if (a.getValue() != null && a.getValue() instanceof Instance) {
+					Instance ins = (Instance)a.getValue();
+					Iterator<Entry<String,Variable>> it = ins.getVariables().entrySet().iterator();
+					while (it.hasNext()) {
+						Entry<String,Variable> entry = it.next();
+						ret.getNames().add(entry.getKey());
+					}
+				}
+				return new Variable(ret);
+			}
+		});
+		addFunction(new RunnerFunction("interface") {
+			public Variable run(Runner runner, boolean isFirst) throws ReturnException, ScriptException {
+				Instruction ins = runner.getNextInstruction();
+				runner.incPosition();
+				Interface ret = new Interface();
+				if (ins instanceof CodeInstruction) {
+					for (Instruction ciIns : ((CodeInstruction)ins).getInstructions()) {
+						if (ciIns != null && ciIns instanceof NameInstruction) {
+							ret.getNames().add(((NameInstruction)ciIns).getName());
+						}
+					}
+				}
+				if (ins != null && ins instanceof NameInstruction) {
+					ret.getNames().add(((NameInstruction)ins).getName());
+				}
+				return new Variable(ret);
+			}
+		});
+		addFunction(new RunnerFunction("matches") {
+			public Variable run(Runner runner, boolean isFirst) throws ReturnException, ScriptException {
+				Variable a = runner.runNext();
+				Variable b = runner.runNext();
+				if (a.getValue() != null && a.getValue() instanceof Instance) {
+					if (b.getValue() != null) {
+						if (b.getValue() instanceof Interface) {
+							for (String name : ((Interface)b.getValue()).getNames()) {
+								if (!((Instance)a.getValue()).getVariables().containsKey(name)) {
+									return new Variable(false);	
+								}
+							}
+							return new Variable(true);
+						}
+					}
+				}
+				return new Variable(false);
 			}
 		});
 		addFunction(new RunnerFunction("pack") {
@@ -300,12 +368,28 @@ public class DefaultLibrary implements FunctionLibrary {
 				return new Variable();
 			}
 		});
+		addFunction(new RunnerFunction("!") {
+			public Variable run(Runner runner, boolean isFirst) throws ReturnException, ScriptException {
+				Variable a = runner.runNext();
+				if (a.getValue() == null)
+					return new Variable(true);
+				if (a.getValue() instanceof Boolean) {
+					return new Variable(!(boolean)a.getValue());
+				}
+				if (a.getValue() instanceof Double) {
+					return new Variable((double)a.getValue() > 0.0);
+				}
+				return new Variable(false);
+			}
+		});
 		addFunction(new RunnerFunction("==") {
 			public Variable run(Runner runner, boolean isFirst) throws ReturnException, ScriptException {
 				Variable a = runner.runNext();
 				Variable b = runner.runNext();
 				if (a.getValue() == null && b.getValue() == null)
 					return new Variable(true);
+				if (a.getValue() == null)
+					return new Variable(false);
 				return new Variable(a.getValue().equals(b.getValue()));
 			}
 		});
@@ -315,6 +399,8 @@ public class DefaultLibrary implements FunctionLibrary {
 				Variable b = runner.runNext();
 				if (a.getValue() == null && b.getValue() == null)
 					return new Variable(false);
+				if (a.getValue() == null)
+					return new Variable(true);
 				return new Variable(!a.getValue().equals(b.getValue()));
 			}
 		});

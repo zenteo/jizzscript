@@ -7,38 +7,24 @@ pack math {
 	/*
 	* A vector is, and will always be, a vector.
 	*/
-	func Vector {
+	func Vector2 {
 		// x = $, where the next parameter is $
 		// y = $, where the next parameter is $
 		$x
 		$y
-		create = @Vector
+		create = @Vector2
 		
-		func clone {
-			return Vector x y
-		}
-		
-		// Vector has a function add(vector)
 		func add {
 			$v
-			if (contains v create) == false {
-				x += v
-				y += $
-				return super
-			}
 			x += v.x
 			y += v.y
 			return super
 		}
 		
-		// Vector has a function added(vector)
 		func added {
-			ret = clone
-			ret.add $
-			return ret
+			return clone.add $
 		}
 		
-				// Vector has a function add(vector)
 		func sub {
 			$v
 			x -= v.x
@@ -46,11 +32,8 @@ pack math {
 			return super
 		}
 		
-		// Vector has a function added(vector)
 		func subed {
-			ret = clone
-			ret.sub $
-			return ret
+			return clone.sub $
 		}
 		
 		func mul {
@@ -60,11 +43,8 @@ pack math {
 			return super
 		}
 		
-		// Vector has a function added(vector)
 		func muled {
-			ret = clone
-			ret.mul $
-			return ret
+			return clone.mul $
 		}
 		
 		func div {
@@ -73,21 +53,48 @@ pack math {
 			y /= f
 			return super
 		}
-		
-		// Vector has a function added(vector)
+
 		func dived {
-			ret = clone
-			ret.div $
-			return ret
+			return clone.div $
 		}
 		
-		// Vector has a function equals(vector)
 		func equals {
 			$v
 			return x == v.x && y == v.y
 		}
 		
-		// Vector has a toString method
+		func squaredLength {
+			return x*x + y*y
+		}
+		
+		func length {
+			return sqrt squaredLength
+		}
+		
+		func dot {
+			$v
+			return x*v.x + y*v.y
+		}
+		
+		func normalize {
+			l = length
+			x /= l
+			y /= l
+			return super
+		}
+		
+		func normalized {
+			return clone.normalize
+		}
+		
+		func clone {
+			return create x y
+		}
+		
+		func identity {
+			return interfaceOf super
+		}
+		
 		func toString {
 			return "[" + x + ", " + y + "]"
 		}
@@ -97,7 +104,7 @@ pack math {
 
 // test package
 pack test {
-	a = math.Vector 3 5
+	a = math.Vector2 3 5
 	b = a.create 2 1
 }
 
@@ -105,14 +112,16 @@ pack test {
 	jizz.println (a.added b).toString
 	jizz.println (a.added b).toString
 	
-	jizzscript.println "-----"
+	jizz.println "-----"
 	
-	jizzscript.println (a.add b).toString
-	jizzscript.println (a.add b).toString
-	jizzscript.println (math.cos 23)
+	jizz.println (a.add b).toString
+	jizz.println (a.add b).toString
+	
+	jizz.println "-----"
+	
+	jizz.println (a.normalized).toString
+	jizz.println (math.cos 23)
+	jizz.println a.identity
 }
-
-
-jizz.println math.sqrt 3.5
 
 jizz.println "Done"
