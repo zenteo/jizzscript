@@ -55,6 +55,11 @@ public class Runner extends Instance {
 		return position;
 	}
 	
+	public int decPosition() {
+		position -= 1;
+		return position;
+	}
+	
 	public Runner getMaster() {
 		return master;
 	}
@@ -152,6 +157,8 @@ public class Runner extends Instance {
 			}
 			else {
 				message = "Argument for function not found.";
+				ins = instructions.get(position-2);
+				message += ins.getCodeblock().toString();
 			}
 			throw new ScriptException(message);
 		}
