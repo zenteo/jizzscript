@@ -24,11 +24,11 @@ public class DefaultLibrary implements FunctionLibrary {
 	public void addDefaults(Runner runner) {
 		Variable jizzVar = runner.getVariable("jizz");
 		if (jizzVar.getValue() == null || !(jizzVar.getValue() instanceof Instance)) {
-			jizzVar.setValue(new Instance(null));
+			jizzVar.setValue(new Instance(runner));
 		}
 		Variable mathVar = runner.getVariable("math");
 		if (mathVar.getValue() == null || !(mathVar.getValue() instanceof Instance)) {
-			mathVar.setValue(new Instance(null));
+			mathVar.setValue(new Instance(runner));
 		}
 		Instance jizz = (Instance)jizzVar.getValue();
 		Instance math = (Instance)mathVar.getValue();
@@ -177,6 +177,11 @@ public class DefaultLibrary implements FunctionLibrary {
 				return new Variable(true);
 			}
 		});
+		addFunction(new RunnerFunction(";") {
+			public Variable run(Runner runner, boolean isFirst) throws ReturnException, ScriptException {
+				return new Variable(new Stop());
+			}
+		});
 		addFunction(new RunnerFunction("false") {
 			public Variable run(Runner runner, boolean isFirst) throws ReturnException, ScriptException {
 				return new Variable(false);
@@ -202,9 +207,29 @@ public class DefaultLibrary implements FunctionLibrary {
 				Variable b = runner.next();
 				int end = runner.getPosition();
 				runner.setPosition(start);
-				while ((Boolean)runner.runNext().getValue()) {
+				while ((Boolean)a.getValue()) {
 					runner.runVariable(b);
 					runner.setPosition(start);
+					a = runner.runNext();
+				}
+				runner.setPosition(end);
+				return new Variable();
+			}
+		});
+		addFunction(new RunnerFunction("for") {
+			public Variable run(Runner runner, boolean isFirst) throws ReturnException, ScriptException {
+				runner.runNext(); // Init
+				int start = runner.getPosition();
+				Variable a = runner.runNext(); // Condition
+				Variable b = runner.next();
+				Variable c = runner.next();
+				int end = runner.getPosition();
+				runner.setPosition(start);
+				while ((Boolean)a.getValue()) {
+					runner.runVariable(c);
+					runner.runVariable(b);
+					runner.setPosition(start);
+					a = runner.runNext();
 				}
 				runner.setPosition(end);
 				return new Variable();

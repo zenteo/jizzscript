@@ -128,6 +128,7 @@ public class Parser {
 		splitters.add(new Splitter(".", true));		// Decimal point / child of
 		splitters.add(new Splitter("$", true));		// parameter fetcher
 		splitters.add(new Splitter("@", true));		// address of operator
+		splitters.add(new Splitter(";", true));		// Stop
 		
 		// Logic operators
 		splitters.add(new Splitter("||", true));	// || operator
