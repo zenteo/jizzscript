@@ -290,6 +290,10 @@ public class DefaultLibrary implements FunctionLibrary {
 		});
 		addFunction(new RunnerFunction("interface") {
 			public Variable run(Runner runner, boolean isFirst) throws ReturnException, ScriptException {
+				Variable holder = null;
+				if (isFirst) {
+					holder = runner.runNext();
+				}
 				Instruction ins = runner.getNextInstruction();
 				runner.incPosition();
 				Interface ret = new Interface();
@@ -302,6 +306,10 @@ public class DefaultLibrary implements FunctionLibrary {
 				}
 				if (ins != null && ins instanceof NameInstruction) {
 					ret.getNames().add(((NameInstruction)ins).getName());
+				}
+				if (holder != null) {
+					holder.setValue(ret);
+					return holder;
 				}
 				return new Variable(ret);
 			}
@@ -600,6 +608,9 @@ public class DefaultLibrary implements FunctionLibrary {
 					return new Variable();
 				}
 				Instance instance = ((Instance)a.getValue());
+				if (varName.equals("super")) {
+					return new Variable(instance.getParent());
+				}
 				return instance.getField(varName);
 			}
 		});
