@@ -8,7 +8,7 @@ public abstract class RunnerFunction {
 	}
 	
 	public abstract Variable run(Runner runner, boolean isFirst)
-			throws ReturnException, ScriptException;
+			throws ReturnException, ScriptException, JizzException;
 
 	public String getName() {
 		return name;

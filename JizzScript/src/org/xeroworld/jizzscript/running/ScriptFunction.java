@@ -13,7 +13,7 @@ public class ScriptFunction extends Function {
 	}
 	
 	@Override
-	public Variable run(Runner master) throws ScriptException {
+	public Variable run(Runner master) throws ScriptException, JizzException {
 		Runner r = new Runner(getInstance().getFunctionLibrary(), getInstance(), instructions);
 		r.setMaster(master);
 		return r.run();

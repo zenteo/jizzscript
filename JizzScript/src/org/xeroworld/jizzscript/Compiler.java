@@ -44,7 +44,9 @@ public class Compiler {
 	}
 	
 	public ArrayList<Instruction> compile(Codeblock code) {
-		return compile(parser.parse(code));
+		ArrayList<Codeblock> codeblocks = parser.parse(code);
+		//System.out.println(codeblocks);
+		return compile(codeblocks);
 	}
 	
 	private ArrayList<Instruction> compile(ArrayList<Codeblock> parsed) {

@@ -15,6 +15,7 @@ public class Runner extends Instance {
 	private FunctionLibrary funclib;
 	private ArrayList<Instruction> instructions;
 	private Runner master = null;
+	private boolean testFlag = false;
 	private int position = 0;
 	
 	public Runner(FunctionLibrary funclib, Instance parent, ArrayList<Instruction> instructions) {
@@ -79,15 +80,11 @@ public class Runner extends Instance {
 		return null;
 	}
 	
-	public Variable run() throws ScriptException {
-		return run(false);
-	}
-	
-	public Variable runAndThrow() throws ScriptException, ReturnException {
+	public Variable runAndThrow() throws ScriptException, ReturnException, JizzException {
 		return runAndThrow(false);
 	}
 	
-	public Variable runAndThrow(boolean makeList) throws ScriptException, ReturnException {
+	public Variable runAndThrow(boolean makeList) throws ScriptException, ReturnException, JizzException {
 		int at = 0;
 		while (hasNext()) {
 			Variable ret = runNext(true);
@@ -102,17 +99,12 @@ public class Runner extends Instance {
 		return new Variable(this);
 	}
 	
-	public Variable run(boolean makeList) throws ScriptException {
-		int at = 0;
+	public Variable run() throws ScriptException, JizzException {
 		try {
 			while (hasNext()) {
 				Variable ret = runNext(true);
 				if (ret == null) {
 					throw new ScriptException("Please, kill me!");
-				}
-				if (makeList) {
-					getVariable(String.valueOf(at)).setValue(ret.getValue());
-					at++;
 				}
 			}
 		}
@@ -121,16 +113,28 @@ public class Runner extends Instance {
 		}
 		return new Variable(this);
 	}
+	
+	public ListInstance makeList() throws ScriptException, ReturnException, JizzException {
+		ListInstance ret = new ListInstance(this);
+		while (hasNext()) {
+			Variable var = runNext(true);
+			if (var == null) {
+				throw new ScriptException("Please, kill me!");
+			}
+			ret.getData().add(var);
+		}
+		return ret;
+	}
 
-	public Variable runNext() throws ReturnException, ScriptException {
+	public Variable runNext() throws ReturnException, ScriptException, JizzException {
 		return runNext(false);
 	}
 	
-	public Variable runNext(boolean first) throws ReturnException, ScriptException {
+	public Variable runNext(boolean first) throws ReturnException, ScriptException, JizzException {
 		return runVariable(next(first));
 	}
 	
-	public Variable runVariable(Variable var) throws ReturnException, ScriptException {
+	public Variable runVariable(Variable var) throws ReturnException, ScriptException, JizzException {
 		if (var.getValue() instanceof Function) {
 			return ((Function)var.getValue()).run(this);
 		}
@@ -143,11 +147,11 @@ public class Runner extends Instance {
 		return var;
 	}
 	
-	public Variable next() throws ReturnException, ScriptException {
+	public Variable next() throws ReturnException, ScriptException, JizzException {
 		return next(false);
 	}
 	
-	public Variable next(boolean first) throws ReturnException, ScriptException {
+	public Variable next(boolean first) throws ReturnException, ScriptException, JizzException {
 		Instruction ins = getNextInstruction();
 		position++;
 		if (ins == null) {
@@ -179,8 +183,8 @@ public class Runner extends Instance {
 		}
 		if (ins instanceof ListInstruction) {
 			Runner r = new Runner(funclib, this, ((ListInstruction)ins).getInstructions());
-			r.run(true);
-			return new Variable(r);
+			ListInstance list = r.makeList();
+			return new Variable(list);
 		}
 		if (ins instanceof NameInstruction) {
 			return getVariable(((NameInstruction)ins).getName());
@@ -189,5 +193,13 @@ public class Runner extends Instance {
 			throw new ScriptException("Something went wrong around " + ins.toString());
 		}
 		throw new ScriptException("Please, kill me!");
+	}
+
+	public boolean isTestFlag() {
+		return testFlag;
+	}
+
+	public void setTestFlag(boolean testFlag) {
+		this.testFlag = testFlag;
 	}
 }

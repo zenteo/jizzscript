@@ -19,4 +19,16 @@ public class Variable {
 		this.value = value;
 	}
 	
+	public String toString() {
+		if (value instanceof String) {
+			return "\"" + value.toString() + "\"";
+		}
+		else if (value instanceof ListInstance) {
+			return "[" + value.toString() + "]";
+		}
+		else if (value instanceof Instance) {
+			return "{" + value.toString() + "}";
+		}
+		return value.toString();
+	}
 }

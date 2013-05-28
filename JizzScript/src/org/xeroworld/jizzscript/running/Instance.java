@@ -2,6 +2,8 @@ package org.xeroworld.jizzscript.running;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map.Entry;
 
 import org.xeroworld.jizzscript.instructions.Instruction;
 
@@ -67,5 +69,20 @@ public class Instance {
 			return parent.getVariableSafely(name);
 		}
 		return null;
+	}
+	
+	public String toString() {
+		StringBuilder builder = new StringBuilder();
+		Iterator<Entry<String, Variable>> it =  variables.entrySet().iterator();
+		while (it.hasNext()) {
+			Entry<String, Variable> e = it.next();
+			builder.append(e.getKey());
+			builder.append(" = ");
+			builder.append(e.getValue());
+			if (it.hasNext()) {
+				builder.append("\t");
+			}
+		}
+		return builder.toString();
 	}
 }

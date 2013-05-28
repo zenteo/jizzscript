@@ -148,6 +148,7 @@ public class Parser {
 		splitters.add(new Splitter("--", true));	// decrease
 		
 		// Set-to arithmetic operators
+		splitters.add(new Splitter("=", true));		// = operator
 		splitters.add(new Splitter("+=", true));	// += operator
 		splitters.add(new Splitter("-=", true));	// -= operator
 		splitters.add(new Splitter("*=", true));	// *= operator
@@ -200,7 +201,6 @@ public class Parser {
 				Sequence c = containers.get(k);
 				if (c.isInside(insideCounts[k])) {
 					if (c.getEscape() != null && code.charAt(i) == c.getEscape()) {
-						System.out.println("asdfadf");
 						i += 1;
 						current.append(code.charAt(i));
 					}
@@ -339,14 +339,15 @@ public class Parser {
 				}
 			}
 		}
-		for (int i = ret.size() - 2; i >= 1 ; i--) {
+		for (int i = 1; i < ret.size() - 1; i++) {
 			ArrayList<Codeblock> curr = ret.get(i);
 			if (curr.size() == 1) {
 				if (curr.get(0).getCode().equals("*") || curr.get(0).getCode().equals("/")) {
-					ret.get(i - 1).add(0, curr.get(0));
-					ret.get(i - 1).addAll(ret.get(i + 1));
-					ret.remove(i + 1);
+					ret.get(i + 1).addAll(0, ret.get(i - 1));
+					ret.get(i + 1).add(0, curr.get(0));
 					ret.remove(i);
+					ret.remove(i - 1);
+					i -= 1;
 				}
 			}
 		}

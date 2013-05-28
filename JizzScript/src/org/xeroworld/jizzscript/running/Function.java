@@ -15,5 +15,9 @@ public abstract class Function {
 		return instance;
 	}
 	
-	public abstract Variable run(Runner master) throws ScriptException;
+	public abstract Variable run(Runner master) throws ScriptException, JizzException;
+	
+	public String toString() {
+		return "func {}";
+	}
 }
