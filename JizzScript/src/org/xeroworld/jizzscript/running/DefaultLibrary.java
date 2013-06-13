@@ -1,13 +1,13 @@
 package org.xeroworld.jizzscript.running;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
+import java.util.Random;
 
 import org.xeroworld.jizzscript.Compiler;
 import org.xeroworld.jizzscript.instructions.CodeInstruction;
@@ -42,6 +42,53 @@ public class DefaultLibrary implements FunctionLibrary {
 		Instance jizz = (Instance) jizzVar.getValue();
 		Instance math = (Instance) mathVar.getValue();
 		jizz.getField("mains").setValue(new ListInstance(jizz));
+		jizz.getField("currentTime").setValue(new Function(null) {
+			@Override
+			public Variable run(Runner master) throws ScriptException,
+					JizzException {
+				return new Variable((double)System.currentTimeMillis());
+			}
+		});
+		jizz.getField("Random").setValue(new Function(null) {
+			@Override
+			public Variable run(Runner master) throws ScriptException,
+					JizzException {
+				try {
+					Variable seedVar = master.runNext();
+					if (seedVar != null && seedVar.getValue() instanceof Double) {
+						Instance ins = new Instance(master);
+						double seed = (Double)seedVar.getValue();
+						final Random rnd = new Random((long)seed);
+						ins.getField("nextDouble").setValue(new Function(null) {
+							@Override
+							public Variable run(Runner master) throws ScriptException,
+									JizzException {
+								return new Variable(rnd.nextDouble());
+							}
+						});
+						ins.getField("nextInt").setValue(new Function(null) {
+							@Override
+							public Variable run(Runner master) throws ScriptException,
+									JizzException {
+								return new Variable((double)rnd.nextInt());
+							}
+						});
+						ins.getField("nextBoolean").setValue(new Function(null) {
+							@Override
+							public Variable run(Runner master) throws ScriptException,
+									JizzException {
+								return new Variable(rnd.nextBoolean());
+							}
+						});
+						return new Variable(ins);
+					}
+				} catch (ReturnException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				return new Variable();
+			}
+		});
 		jizz.getField("include").setValue(new Function(null) {
 			@Override
 			public Variable run(Runner master) throws ScriptException,
@@ -96,14 +143,21 @@ public class DefaultLibrary implements FunctionLibrary {
 				return new Variable();
 			}
 		});
-		jizz.getField("print").setValue(new Function(null) {
+		jizz.getField("Array").setValue(new Function(null) {
 			@Override
 			public Variable run(Runner master) throws ScriptException,
 					JizzException {
 				try {
 					Variable next;
 					next = master.runNext();
-					System.out.print(next.getValue());
+					if (next.getValue() instanceof Double) {
+						ListInstance list = new ListInstance(master);
+						double count = (Double)next.getValue();
+						for (int i = 0; i < (int)count; i++) {
+							list.getData().add(new Variable());
+						}
+						return new Variable(list);
+					}
 				} catch (ReturnException e) {
 					e.printStackTrace();
 				}
@@ -122,6 +176,13 @@ public class DefaultLibrary implements FunctionLibrary {
 					e.printStackTrace();
 				}
 				return new Variable();
+			}
+		});
+		math.getField("random").setValue(new Function(null) {
+			@Override
+			public Variable run(Runner master) throws ScriptException,
+					JizzException {
+				return new Variable(Math.random());
 			}
 		});
 		math.getField("pow").setValue(new Function(null) {
@@ -198,6 +259,19 @@ public class DefaultLibrary implements FunctionLibrary {
 				try {
 					Variable a = master.runNext();
 					return new Variable(Math.exp((Double) a.getValue()));
+				} catch (ReturnException e) {
+					e.printStackTrace();
+				}
+				return new Variable();
+			}
+		});
+		math.getField("round").setValue(new Function(null) {
+			@Override
+			public Variable run(Runner master) throws ScriptException,
+					JizzException {
+				try {
+					Variable a = master.runNext();
+					return new Variable((double)Math.round((Double) a.getValue()));
 				} catch (ReturnException e) {
 					e.printStackTrace();
 				}
@@ -359,7 +433,7 @@ public class DefaultLibrary implements FunctionLibrary {
 				runner.incPosition();
 				if (ins != null && ins instanceof NameInstruction) {
 					return runner
-							.getVariable(((NameInstruction) ins).getName());
+							.getField(((NameInstruction) ins).getName());
 				}
 				return new Variable();
 			}
@@ -846,7 +920,7 @@ public class DefaultLibrary implements FunctionLibrary {
 				String varName = null;
 				runner.incPosition();
 				if (a.getValue() == null || !(a.getValue() instanceof Instance)) {
-					a.setValue(new Instance(null));
+					a.setValue(new Instance(runner));
 				}
 				if (ins instanceof NameInstruction) {
 					varName = ((NameInstruction) ins).getName();

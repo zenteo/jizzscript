@@ -123,6 +123,7 @@ public class Parser {
 		splitters.add(new Splitter(" ", false));	// Space
 		splitters.add(new Splitter("\t", false));	// Tab
 		splitters.add(new Splitter("\n", false));	// New line
+		splitters.add(new Splitter(",", false));	// Meaningless splitter for organizing code
 		
 		//[Splitters]
 		splitters.add(new Splitter(".", true));		// Decimal point / child of

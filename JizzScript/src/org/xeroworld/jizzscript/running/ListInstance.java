@@ -1,13 +1,90 @@
 package org.xeroworld.jizzscript.running;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+
+class ListComparator implements Comparator<Variable> {
+	private Runner master;
+	
+	public ListComparator(Runner master) {
+		this.master = master;
+	}
+	
+	@Override
+	public int compare(final Variable o1, final Variable o2) {
+		if (o1.getValue() instanceof Instance) {
+			Instance ins = (Instance)o1.getValue();
+			Variable func = ins.getField("compareTo");
+			if (func.getValue() instanceof Function) {
+				Runner runner = new Runner(master.getFunctionLibrary(), master, null) {
+					@Override
+					public Variable runNext(boolean first) {
+						return o2;
+					}
+				};
+				try {
+					Variable ret = runner.runVariable(func);
+					if (ret.getValue() instanceof Double) {
+						double val = (Double)ret.getValue();
+						return (int)val;
+					}
+				} catch (ReturnException e) {
+					e.printStackTrace();
+				} catch (ScriptException e) {
+					e.printStackTrace();
+				} catch (JizzException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		if (o2.getValue() instanceof Instance) {
+			Instance ins = (Instance)o2.getValue();
+			Variable func = ins.getField("compareTo");
+			if (func.getValue() instanceof Function) {
+				Runner runner = new Runner(master.getFunctionLibrary(), master, null) {
+					@Override
+					public Variable runNext(boolean first) {
+						return o1;
+					}
+				};
+				try {
+					Variable ret = runner.runVariable(func);
+					if (ret.getValue() instanceof Double) {
+						double val = (Double)ret.getValue();
+						return -(int)val;
+					}
+				} catch (ReturnException e) {
+					e.printStackTrace();
+				} catch (ScriptException e) {
+					e.printStackTrace();
+				} catch (JizzException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		return o1.compareTo(o2);
+	}
+	
+}
 
 public class ListInstance extends Instance {
 	private ArrayList<Variable> data;
 	
-	public ListInstance(Instance parent) {
+	public ListInstance(final Instance parent) {
 		super(parent);
 		data = new ArrayList<Variable>();
+		Function cloneFunc = new Function(null) {
+			@Override
+			public Variable run(Runner master) throws ScriptException,
+					JizzException {
+				ListInstance ret = new ListInstance(parent);
+				for (Variable v : data) {
+					ret.data.add(new Variable(v.getValue()));
+				}
+				return new Variable(ret);
+			}
+		};
 		Function getFunc = new Function(null) {
 			@Override
 			public Variable run(Runner master) throws ScriptException,
@@ -22,6 +99,15 @@ public class ListInstance extends Instance {
 				catch (ReturnException e) {
 					e.printStackTrace();
 				}
+				return new Variable();
+			}
+		};
+		Function sortFunc = new Function(null) {
+			@Override
+			public Variable run(Runner master) throws ScriptException,
+					JizzException {
+				ListComparator comparator = new ListComparator(master);
+				Collections.sort(data, comparator);
 				return new Variable();
 			}
 		};
@@ -126,6 +212,8 @@ public class ListInstance extends Instance {
 			}
 		};
 		getField("get").setValue(getFunc);
+		getField("clone").setValue(cloneFunc);
+		getField("sort").setValue(sortFunc);
 		getField("add").setValue(addFunc);
 		getField("addAt").setValue(addAtFunc);
 		getField("remove").setValue(removeFunc);

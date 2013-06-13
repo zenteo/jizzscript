@@ -1,6 +1,6 @@
 package org.xeroworld.jizzscript.running;
 
-public class Variable {
+public class Variable implements Comparable<Variable> {
 	private Object value;
 
 	public Variable() {
@@ -29,6 +29,25 @@ public class Variable {
 		else if (value instanceof Instance) {
 			return "{" + value.toString() + "}";
 		}
+		if (value == null) {
+			return "null";
+		}
 		return value.toString();
+	}
+
+	@Override
+	public int compareTo(Variable var) {
+		if (value instanceof String && var.getValue() instanceof String) {
+			return ((String)value).compareTo((String)var.getValue());
+		}
+		if (value instanceof Double && var.getValue() instanceof Double) {
+			return ((Double)value).compareTo((Double)var.getValue());
+		}
+		return 0;
+	}
+	
+	@Override
+	public Object clone() {
+		return new Variable(value);
 	}
 }
