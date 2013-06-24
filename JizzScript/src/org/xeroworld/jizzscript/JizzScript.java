@@ -66,7 +66,7 @@ public class JizzScript {
 						} catch (JizzException ex) {
 							System.out.println("Exception thrown from within script: " + ex.getValue());
 						} catch (ReturnException e) {
-							System.out.println("A main returned " + e.getValue());
+							System.out.println("A main returned " + e.getVariable().getValue());
 						}
 					}
 				}

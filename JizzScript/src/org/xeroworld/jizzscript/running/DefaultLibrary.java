@@ -55,32 +55,60 @@ public class DefaultLibrary implements FunctionLibrary {
 					JizzException {
 				try {
 					Variable seedVar = master.runNext();
-					if (seedVar != null && seedVar.getValue() instanceof Double) {
-						Instance ins = new Instance(master);
-						double seed = (Double)seedVar.getValue();
-						final Random rnd = new Random((long)seed);
-						ins.getField("nextDouble").setValue(new Function(null) {
-							@Override
-							public Variable run(Runner master) throws ScriptException,
-									JizzException {
-								return new Variable(rnd.nextDouble());
-							}
-						});
-						ins.getField("nextInt").setValue(new Function(null) {
-							@Override
-							public Variable run(Runner master) throws ScriptException,
-									JizzException {
-								return new Variable((double)rnd.nextInt());
-							}
-						});
-						ins.getField("nextBoolean").setValue(new Function(null) {
-							@Override
-							public Variable run(Runner master) throws ScriptException,
-									JizzException {
-								return new Variable(rnd.nextBoolean());
-							}
-						});
-						return new Variable(ins);
+					if (seedVar != null) {
+						if (seedVar.getValue() instanceof Double) {
+							Instance ins = new Instance(master);
+							double seed = (Double)seedVar.getValue();
+							final Random rnd = new Random((long)seed);
+							ins.getField("nextDouble").setValue(new Function(null) {
+								@Override
+								public Variable run(Runner master) throws ScriptException,
+										JizzException {
+									return new Variable(rnd.nextDouble());
+								}
+							});
+							ins.getField("nextInt").setValue(new Function(null) {
+								@Override
+								public Variable run(Runner master) throws ScriptException,
+										JizzException {
+									return new Variable((double)rnd.nextInt());
+								}
+							});
+							ins.getField("nextBoolean").setValue(new Function(null) {
+								@Override
+								public Variable run(Runner master) throws ScriptException,
+										JizzException {
+									return new Variable(rnd.nextBoolean());
+								}
+							});
+							return new Variable(ins);
+						}
+						else if (seedVar.getValue() instanceof Stop) {
+							Instance ins = new Instance(master);
+							final Random rnd = new Random();
+							ins.getField("nextDouble").setValue(new Function(null) {
+								@Override
+								public Variable run(Runner master) throws ScriptException,
+										JizzException {
+									return new Variable(rnd.nextDouble());
+								}
+							});
+							ins.getField("nextInt").setValue(new Function(null) {
+								@Override
+								public Variable run(Runner master) throws ScriptException,
+										JizzException {
+									return new Variable((double)rnd.nextInt());
+								}
+							});
+							ins.getField("nextBoolean").setValue(new Function(null) {
+								@Override
+								public Variable run(Runner master) throws ScriptException,
+										JizzException {
+									return new Variable(rnd.nextBoolean());
+								}
+							});
+							return new Variable(ins);
+						}
 					}
 				} catch (ReturnException e) {
 					// TODO Auto-generated catch block
@@ -164,6 +192,37 @@ public class DefaultLibrary implements FunctionLibrary {
 				return new Variable();
 			}
 		});
+		jizz.getField("intStr").setValue(new Function(null) {
+			@Override
+			public Variable run(Runner master) throws ScriptException,
+					JizzException {
+				try {
+					Variable next;
+					next = master.runNext();
+					if (next.getValue() instanceof Double) {
+						double value = (Double)next.getValue();
+						return new Variable(String.valueOf((int)value));
+					}
+				} catch (ReturnException e) {
+					e.printStackTrace();
+				}
+				return new Variable();
+			}
+		});
+		jizz.getField("print").setValue(new Function(null) {
+			@Override
+			public Variable run(Runner master) throws ScriptException,
+					JizzException {
+				try {
+					Variable next;
+					next = master.runNext();
+					System.out.print(next.getValue());
+				} catch (ReturnException e) {
+					e.printStackTrace();
+				}
+				return new Variable();
+			}
+		});
 		jizz.getField("println").setValue(new Function(null) {
 			@Override
 			public Variable run(Runner master) throws ScriptException,
@@ -178,6 +237,8 @@ public class DefaultLibrary implements FunctionLibrary {
 				return new Variable();
 			}
 		});
+		math.getField("PI").setValue(Math.PI);
+		math.getField("E").setValue(Math.E);
 		math.getField("random").setValue(new Function(null) {
 			@Override
 			public Variable run(Runner master) throws ScriptException,
@@ -259,6 +320,32 @@ public class DefaultLibrary implements FunctionLibrary {
 				try {
 					Variable a = master.runNext();
 					return new Variable(Math.exp((Double) a.getValue()));
+				} catch (ReturnException e) {
+					e.printStackTrace();
+				}
+				return new Variable();
+			}
+		});
+		math.getField("log").setValue(new Function(null) {
+			@Override
+			public Variable run(Runner master) throws ScriptException,
+					JizzException {
+				try {
+					Variable a = master.runNext();
+					return new Variable(Math.log((Double) a.getValue()));
+				} catch (ReturnException e) {
+					e.printStackTrace();
+				}
+				return new Variable();
+			}
+		});
+		math.getField("log10").setValue(new Function(null) {
+			@Override
+			public Variable run(Runner master) throws ScriptException,
+					JizzException {
+				try {
+					Variable a = master.runNext();
+					return new Variable(Math.log10((Double) a.getValue()));
 				} catch (ReturnException e) {
 					e.printStackTrace();
 				}
@@ -423,6 +510,53 @@ public class DefaultLibrary implements FunctionLibrary {
 					a = runner.runNext();
 				}
 				runner.setPosition(end);
+				return new Variable();
+			}
+		});
+		addFunction(new RunnerFunction("foreach") {
+			public Variable run(Runner runner, boolean isFirst)
+					throws ReturnException, ScriptException, JizzException {
+				Variable a = runner.runNext(); // Variable
+				Variable b = runner.runNext(); // List
+				Variable c = runner.next(); // Code
+				if (b.getValue() instanceof ListInstance) {
+					ListInstance list = (ListInstance)b.getValue();
+					for (Variable v : list.getData()) {
+						a.setValue(v.getValue());
+						runner.runVariable(c);
+					}
+				}
+				else if (b.getValue() instanceof Instance) {
+					Instance ins = (Instance)b.getValue();
+					Iterator<Entry<String, Variable>> it = ins.getVariables().entrySet().iterator();
+					while (it.hasNext()) {
+						Entry<String, Variable> next = it.next();
+						Variable v = next.getValue();
+						Instance objValue = new Instance(null);
+						objValue.getField("name").setValue(next.getKey());
+						objValue.getField("value").setValue(next.getValue().getValue());
+						a.setValue(objValue);
+						runner.runVariable(c);
+					}
+				}
+				else if (b.getValue() instanceof String) {
+					String str = (String)b.getValue();
+					for (int i = 0; i < str.length(); i++) {
+						char chr = str.charAt(i);
+						a.setValue(String.valueOf(chr));
+						runner.runVariable(c);
+					}
+				}
+				else if (b.getValue() instanceof Double) {
+					Double value = (Double)b.getValue();
+					for (int i = 0; i < value; i++) {
+						a.setValue(i);
+						runner.runVariable(c);
+					}
+				}
+				else {
+					throw new ScriptException("Cannot iterator through that kind of datatype.");
+				}
 				return new Variable();
 			}
 		});
@@ -630,7 +764,7 @@ public class DefaultLibrary implements FunctionLibrary {
 			public Variable run(Runner runner, boolean isFirst)
 					throws ReturnException, ScriptException, JizzException {
 				Variable a = runner.runNext();
-				throw new ReturnException(a.getValue());
+				throw new ReturnException(a);
 			}
 		});
 		addFunction(new RunnerFunction("=") {

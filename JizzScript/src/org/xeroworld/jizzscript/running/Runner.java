@@ -109,7 +109,7 @@ public class Runner extends Instance {
 			}
 		}
 		catch (ReturnException ex) {
-			return new Variable(ex.getValue());
+			return ex.getVariable();
 		}
 		return new Variable(this);
 	}

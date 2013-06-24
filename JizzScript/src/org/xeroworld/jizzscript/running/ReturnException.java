@@ -1,13 +1,13 @@
 package org.xeroworld.jizzscript.running;
 
 public class ReturnException extends Exception {
-	private Object value;
+	private Variable variable;
 	
-	public ReturnException(Object value) {
-		this.value = value;
+	public ReturnException(Variable variable) {
+		this.variable = variable;
 	}
 	
-	public Object getValue() {
-		return value;
+	public Variable getVariable() {
+		return variable;
 	}
 }
