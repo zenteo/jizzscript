@@ -134,7 +134,7 @@ public class ListInstance extends Instance {
 					Variable v = master.runNext();
 					if (at.getValue() instanceof Double) {
 						double dat = (Double)at.getValue();
-						data.add((int)dat, v);	
+						data.add((int)dat, new Variable(v.getValue()));	
 					}
 				}
 				catch (ReturnException e) {
@@ -173,7 +173,11 @@ public class ListInstance extends Instance {
 					JizzException {
 				try {
 					Variable v = master.runNext();
-					data.remove(v);
+					for (int i = data.size()-1; i >= 0; i--) {
+						if (data.get(i).getValue().equals(v.getValue())) {
+							data.remove(i);
+						}
+					}
 				}
 				catch (ReturnException e) {
 					e.printStackTrace();
