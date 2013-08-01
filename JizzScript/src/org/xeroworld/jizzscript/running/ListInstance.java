@@ -173,11 +173,7 @@ public class ListInstance extends Instance {
 					JizzException {
 				try {
 					Variable v = master.runNext();
-<<<<<<< HEAD
 					for (int i = data.size() - 1; i >= 0; i--) {
-=======
-					for (int i = data.size()-1; i >= 0; i--) {
->>>>>>> branch 'master' of https://github.com/zenteo/jizzscript.git
 						if (data.get(i).getValue().equals(v.getValue())) {
 							data.remove(i);
 						}
