@@ -1018,7 +1018,7 @@ public class DefaultLibrary implements FunctionLibrary {
 					throws ReturnException, ScriptException, JizzException {
 				Variable holder = null;
 				if (isFirst) {
-					holder = runner.runNext();
+					holder = runner.next();
 				}
 				Variable code = runner.next();
 				if (code.getValue() instanceof CodeInstruction) {

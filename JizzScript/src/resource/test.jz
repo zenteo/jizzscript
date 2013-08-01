@@ -68,7 +68,7 @@ pack math {
 		}
 		
 		func length {
-			return sqrt squaredLength
+			return math.sqrt squaredLength
 		}
 		
 		func dot {
@@ -93,6 +93,10 @@ pack math {
 		
 		func identity {
 			return interfaceOf super
+		}
+		
+		func print {
+			jizz.println toString
 		}
 		
 		func toString {
@@ -124,16 +128,7 @@ pack test {
 	jizz.println a.identity
 }
 
-<<<<<<< HEAD
 
 jizz.println math.sqrt 3.5
-i = 0
-while i < 100 { // 1 000 000
-	if i >= 50 {
-		jizz.println "heahe" + i
-	}
-	i++
-}
-=======
->>>>>>> branch 'master' of https://github.com/zenteo/jizzscript.git
+
 jizz.println "Done"

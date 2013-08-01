@@ -6,4 +6,9 @@ public class Stop {
 	public boolean equals(Object other) {
 		return other instanceof Stop;
 	}
+	
+	@Override
+	public String toString() {
+		return ";";
+	}
 }

@@ -38,7 +38,19 @@ public class JizzScript {
 		compiler.clear();
 	}
 	
-	public void run() {
+	public Compiler getCompiler() {
+		return compiler;
+	}
+	
+	public FunctionLibrary getLibrary() {
+		return functionLibrary;
+	}
+	
+	public void setLibrary(FunctionLibrary library) {
+		functionLibrary = library;
+	}
+	
+	public Runner run() {
 		Runner r = new Runner(functionLibrary, compiler.getInstructions());
 		functionLibrary.addDefaults(r);
 		try {
@@ -72,6 +84,7 @@ public class JizzScript {
 				}
 			}
 		}
+		return r;
 	}
 	
 	public static void main(String[] args) {
