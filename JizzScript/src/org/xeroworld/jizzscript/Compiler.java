@@ -1,6 +1,7 @@
 package org.xeroworld.jizzscript;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import org.xeroworld.jizzscript.instructions.CodeInstruction;
 import org.xeroworld.jizzscript.instructions.FunctionInstruction;
@@ -17,9 +18,11 @@ public class Compiler {
 	private Parser parser = new Parser();
 	private FunctionLibrary funclib;
 	private ArrayList<Instruction> instructions;
+	private HashMap<String, ArrayList<Instruction>> definitions;
 	
 	public Compiler(FunctionLibrary funclib) {
 		this.instructions = new ArrayList<Instruction>();
+		this.definitions = new HashMap<String, ArrayList<Instruction>>();
 		this.funclib = funclib;
 	}
 	
@@ -73,6 +76,26 @@ public class Compiler {
 			}
 			if (funclib.hasFunction(c.getCode())) {
 				ret.add(new FunctionInstruction(c, funclib.getFunction(c.getCode())));
+				continue;
+			}
+			if (c.getCode().equals("define") && i+2 <= parsed.size()) {
+				Codeblock name = parsed.get(i+1);
+				Codeblock definition = parsed.get(i+2);
+				if (name.getCode().startsWith("\"") && name.getCode().endsWith("\"")) {
+					if (definition.getCode().startsWith("\"") && definition.getCode().endsWith("\"")) {
+						
+						Codeblock b = (Codeblock)definition.clone();
+						b.setColumn(b.getColumn()+1);
+						b.setCode(definition.getCode().substring(1, definition.getCode().length() - 1));
+						String nm = name.getCode().substring(1, name.getCode().length() - 1);
+						definitions.put(nm, compile(parser.parse(b)));
+						i += 2;
+						continue;
+					}	
+				}
+			}
+			if (definitions.containsKey(c.getCode())) {
+				ret.addAll(definitions.get(c.getCode()));
 				continue;
 			}
 			try {

@@ -41,6 +41,25 @@ public class DefaultLibrary implements FunctionLibrary {
 		}
 		Instance jizz = (Instance) jizzVar.getValue();
 		Instance math = (Instance) mathVar.getValue();
+		Variable stdVar = jizz.getField("std");
+		if (stdVar.getValue() == null
+				|| !(stdVar.getValue() instanceof Instance)) {
+			stdVar.setValue(new Instance(jizz));
+		}
+		Instance std = (Instance) stdVar.getValue();
+		std.getField("get").setValue(new Function(null) {
+			@Override
+			public Variable run(Runner master) throws ScriptException,
+					JizzException {
+				RunnerFunction f = getRunnerFunction(".");
+				try {
+					return f.run(master, false);
+				} catch (ReturnException e) {
+					e.printStackTrace();
+				}
+				return null;
+			}
+		});
 		jizz.getField("mains").setValue(new ListInstance(jizz));
 		jizz.getField("currentTime").setValue(new Function(null) {
 			@Override
@@ -1091,6 +1110,10 @@ public class DefaultLibrary implements FunctionLibrary {
 		return mapping.get(name);
 	}
 
+	public RunnerFunction getRunnerFunction(String name) {
+		return functions.get(mapping.get(name));
+	}
+	
 	@Override
 	public Variable runFunction(int id, Runner runner, boolean isFirst)
 			throws ReturnException, ScriptException, JizzException {
